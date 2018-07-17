@@ -50,7 +50,7 @@ func main() {
 	var query = app.Flag("query", "SQL").Required().String()
 	var dump = app.Flag("dump", "Dump file from database column").Required().String()
 	var filename = app.Flag("filename", "filename column").Required().String()
-	var outDir = app.Flag("out-dir", "Output directory").Default(tmpDir("db2file")).String()
+	var outDir = app.Flag("out-dir", "Output directory").Default(tmpDir("db2file")).PlaceHolder("$TMPDIR/db2file").String()
 	var overwrite = app.Flag("overwrite", "Overwrite file same filename").Bool()
 
 	app.Version("0.1.0")
