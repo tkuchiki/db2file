@@ -21,6 +21,7 @@ Flags:
   --filename=FILENAME        filename column
   --filename-template=FILENAME-TEMPLATE
                              filename Go text/template syntax
+  --mimetype=MIMETYPE        mimetype column
   --out-dir=$TMPDIR/db2file  Output directory
   --overwrite                Overwrite file same filename
   --version                  Show application version.
@@ -32,11 +33,12 @@ mysql> desc image;
 +-------+---------------------+------+-----+---------+----------------+
 | Field | Type                | Null | Key | Default | Extra          |
 +-------+---------------------+------+-----+---------+----------------+
-| id    | bigint(20) unsigned | NO   | PRI | NULL    | auto_increment |
-| name  | varchar(191)        | YES  |     | NULL    |                |
+| id    | bigint(20) unsigned | NO   | PRI | NULL    | auto_increment | -- e.g.) 1
+| name  | varchar(191)        | YES  |     | NULL    |                | -- e.g.) default.png
 | data  | longblob            | YES  |     | NULL    |                |
+| mime  | varchar(128)        | YES  |     | NULL    |                | -- e.g.) image/jpeg
 +-------+---------------------+------+-----+---------+----------------+
-3 rows in set (0.01 sec)
+4 rows in set (0.01 sec)
 
 $ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dump data --filename name
 2018/07/17 23:52:23 [dump] tmp/default.png
@@ -51,5 +53,11 @@ $ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dum
 2018/07/18 15:40:08 [dump] tmp/1.jpg
 2018/07/18 15:40:08 [dump] tmp/2.jpg
 2018/07/18 15:40:08 [dump] tmp/3.jpg
+...
+
+$ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dump data --mimetype mime --filename-template "{{ .id }}.{{ .ext }}"
+2018/07/18 23:07:42 [dump] tmp/1.jpg
+2018/07/18 23:07:42 [dump] tmp/2.jpg
+2018/07/18 23:07:42 [dump] tmp/3.jpg
 ...
 ```

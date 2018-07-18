@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/tkuchiki/go-mimetype-ext"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -67,12 +68,25 @@ func main() {
 	var dump = app.Flag("dump", "Dump file from database column").Required().String()
 	var filename = app.Flag("filename", "filename column").String()
 	var filenameTemplate = app.Flag("filename-template", "filename Go text/template syntax").String()
+	var mimetype = app.Flag("mimetype", "mimetype column").String()
 	var outDir = app.Flag("out-dir", "Output directory").Default(tmpDir("db2file")).PlaceHolder("$TMPDIR/db2file").String()
 	var overwrite = app.Flag("overwrite", "Overwrite file same filename").Bool()
 
-	app.Version("0.1.1")
+	app.Version("0.1.2")
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	if *dump == "" {
+		log.Fatal("--dump-column is required")
+	}
+
+	if !(*filename == "" || *filenameTemplate == "") {
+		log.Fatal("--filename or --filename-template is required")
+	}
+
+	if (*mimetype != "" && *filenameTemplate == "") || (*mimetype == "" && *filenameTemplate != "") {
+		log.Fatal("--mimetype and --filename-template is required")
+	}
 
 	db, err := openDB(*dbuser, *dbpass, *dbhost, *dbname, *dbsock, *dbport)
 	if err != nil {
@@ -92,14 +106,6 @@ func main() {
 	colNames := make(map[string]struct{})
 	for _, col := range cols {
 		colNames[col] = struct{}{}
-	}
-
-	if *dump == "" {
-		log.Fatal("--dump-column is required")
-	}
-
-	if !(*filename == "" || *filenameTemplate == "") {
-		log.Fatal("--filename or --filename-template is required")
 	}
 
 	b := make([][]byte, len(cols))
@@ -149,6 +155,14 @@ func main() {
 			tplValues := make(map[string]string)
 			for i, val := range b {
 				tplValues[cols[i]] = string(val)
+			}
+
+			if *mimetype != "" {
+				ext, err := mimetype_ext.GetExtension(tplValues[*mimetype])
+				if err != nil {
+					log.Fatal(err)
+				}
+				tplValues["ext"] = ext[0]
 			}
 
 			dumpFile, err = df.fpathTemplate(string(values[*filename]), tplValues)
