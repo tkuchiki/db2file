@@ -70,7 +70,7 @@ func main() {
 	var outDir = app.Flag("out-dir", "Output directory").Default(tmpDir("db2file")).PlaceHolder("$TMPDIR/db2file").String()
 	var overwrite = app.Flag("overwrite", "Overwrite file same filename").Bool()
 
-	app.Version("0.1.0")
+	app.Version("0.1.1")
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
