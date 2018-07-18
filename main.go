@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"os"
@@ -29,8 +30,23 @@ func tmpDir(dir string) string {
 	return filepath.Join(os.TempDir(), dir)
 }
 
-func fpath(dir, filename string) string {
-	return filepath.Join(dir, filename)
+type db2file struct {
+	tpl *template.Template
+	dir string
+}
+
+func (df *db2file) fpath(filename string) string {
+	return filepath.Join(df.dir, filename)
+}
+
+func (df *db2file) fpathTemplate(filename string, data interface{}) (string, error) {
+	var txt bytes.Buffer
+	err := df.tpl.Execute(&txt, data)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(df.dir, txt.String()), nil
 }
 
 func exists(filename string) bool {
@@ -49,7 +65,8 @@ func main() {
 	var dbname = app.Flag("dbname", "Database name").Required().String()
 	var query = app.Flag("query", "SQL").Required().String()
 	var dump = app.Flag("dump", "Dump file from database column").Required().String()
-	var filename = app.Flag("filename", "filename column").Required().String()
+	var filename = app.Flag("filename", "filename column").String()
+	var filenameTemplate = app.Flag("filename-template", "filename Go text/template syntax").String()
 	var outDir = app.Flag("out-dir", "Output directory").Default(tmpDir("db2file")).PlaceHolder("$TMPDIR/db2file").String()
 	var overwrite = app.Flag("overwrite", "Overwrite file same filename").Bool()
 
@@ -77,12 +94,12 @@ func main() {
 		colNames[col] = struct{}{}
 	}
 
-	if _, ok := colNames[*dump]; !ok {
+	if *dump == "" {
 		log.Fatal("--dump-column is required")
 	}
 
-	if _, ok := colNames[*filename]; !ok {
-		log.Fatal("--filename is required")
+	if !(*filename == "" || *filenameTemplate == "") {
+		log.Fatal("--filename or --filename-template is required")
 	}
 
 	b := make([][]byte, len(cols))
@@ -98,17 +115,47 @@ func main() {
 		}
 	}
 
+	df := &db2file{
+		dir: *outDir,
+	}
+
+	if *filenameTemplate != "" {
+		tpl, err := template.New("").Option("missingkey=error").Parse(*filenameTemplate)
+		if err != nil {
+			log.Fatal(err)
+		}
+		df.tpl = tpl
+	}
+
 	for rows.Next() {
 		if err := rows.Scan(row...); err != nil {
 			log.Fatal(err)
 		}
 
+		var dumpFile string
 		values := make(map[string][]byte)
+		tplValues := make(map[string]string)
 		for i, val := range b {
 			values[cols[i]] = val
+			tplValues[cols[i]] = string(val)
 		}
 
-		dumpFile := fpath(*outDir, string(values[*filename]))
+		if *filenameTemplate == "" {
+			dumpFile = df.fpath(string(values[*filename]))
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			tplValues := make(map[string]string)
+			for i, val := range b {
+				tplValues[cols[i]] = string(val)
+			}
+
+			dumpFile, err = df.fpathTemplate(string(values[*filename]), tplValues)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 
 		if !*overwrite && exists(dumpFile) {
 			log.Println(fmt.Sprintf("[skip] %s already exists", dumpFile))

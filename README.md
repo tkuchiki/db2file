@@ -4,7 +4,7 @@
 
 ```console
 $ ./db2file --help
-usage: db2file --dbname=DBNAME --query=QUERY --dump=DUMP --filename=FILENAME [<flags>]
+usage: db2file --dbname=DBNAME --query=QUERY --dump=DUMP [<flags>]
 
 Database dump to file
 
@@ -19,10 +19,11 @@ Flags:
   --query=QUERY              SQL
   --dump=DUMP                Dump file from database column
   --filename=FILENAME        filename column
+  --filename-template=FILENAME-TEMPLATE
+                             filename Go text/template syntax
   --out-dir=$TMPDIR/db2file  Output directory
   --overwrite                Overwrite file same filename
   --version                  Show application version.
-
 ```
 
 
@@ -44,5 +45,11 @@ $ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dum
 2018/07/17 23:52:23 [dump] tmp/8628ef0f034d734729e3a735362e6008b30bb72b.png
 2018/07/17 23:52:23 [dump] tmp/d9efb5732e0ee53618bd10d2ddc5a6b33edc4751.png
 2018/07/17 23:52:23 [dump] tmp/851e9e15e1d1fff39c2d182881926d107154c44a.png
+...
+
+$ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dump data --filename-template "{{ .id }}.jpg"
+2018/07/18 15:40:08 [dump] tmp/1.jpg
+2018/07/18 15:40:08 [dump] tmp/2.jpg
+2018/07/18 15:40:08 [dump] tmp/3.jpg
 ...
 ```
