@@ -18,10 +18,11 @@ Flags:
   --dbname=DBNAME            Database name
   --query=QUERY              SQL
   --dump=DUMP                Dump file from database column
-  --filename=FILENAME        filename column
+  --filename=FILENAME        Filename column
   --filename-template=FILENAME-TEMPLATE
-                             filename Go text/template syntax
-  --mimetype=MIMETYPE        mimetype column
+                             Filename Go text/template syntax
+  --mimetype=MIMETYPE        Mimetype column
+  --auto                     Autodetect file extension
   --out-dir=$TMPDIR/db2file  Output directory
   --overwrite                Overwrite file same filename
   --version                  Show application version.
@@ -55,9 +56,15 @@ $ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dum
 2018/07/18 15:40:08 [dump] tmp/3.jpg
 ...
 
-$ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dump data --mimetype mime --filename-template "{{ .id }}.{{ .ext }}"
+$ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dump data --mimetype mime --filename-template "{{ .id }}"
 2018/07/18 23:07:42 [dump] tmp/1.jpg
 2018/07/18 23:07:42 [dump] tmp/2.jpg
 2018/07/18 23:07:42 [dump] tmp/3.jpg
+...
+
+$ ./db2file --dbname isubata --query "SELECT * from image" --out-dir ./tmp --dump data --auto --filename-template "{{ .id }}"
+2018/07/19 11:30:56 [dump] tmp/1.png
+2018/07/19 11:30:56 [dump] tmp/2.png
+2018/07/19 11:30:56 [dump] tmp/15.jpg
 ...
 ```
